@@ -31,10 +31,11 @@ MiddleButton_Pressed = False
 # placeholders for functions
 def MiddleButton():
     print("MiddleButtonPressed!")
+    FollowLineMode()
 def LeftButton():
-    print("MiddleButtonPressed!")
+    print("LeftButtonPressed!")
 def RightButton():
-    print("MiddleButtonPressed!")
+    print("RightButtonPressed!")
 
 def CheckButtons():
     while True:

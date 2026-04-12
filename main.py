@@ -27,6 +27,7 @@ RightButton_pressed = False
 LeftButton_pressed = False
 MiddleButton_Pressed = False
 
+SpeedMultiplier = 1
 
 # placeholders for functions
 def MiddleButton():
@@ -34,12 +35,14 @@ def MiddleButton():
     FollowLineMode()
 def LeftButton():
     print("LeftButtonPressed!")
+    SpeedMultiplier -= 1
 def RightButton():
     print("RightButtonPressed!")
+    SpeedMultiplier += 1
 
 def CheckButtons():
     while True:
-        sleep(0.5)
+        sleep(0.2)
         if Button.CENTER in ev3.buttons.pressed() and not MiddleButton_Pressed:
             MiddleButton()
             MiddleButton_Pressed = True
@@ -58,39 +61,23 @@ def CheckButtons():
 
 threading.Thread(target=CheckButtons).start
 
-
-
-
-
-
-
-
-# Checking when pressed ( not sure if should be in the loop thought )
-if Button.CENTER in ev3.buttons.pressed():
-    MiddleButton()
-if Button.LEFT in ev3.buttons.pressed():
-    MiddleButton()
-if Button.RIGHT in ev3.buttons.pressed():
-    MiddleButton()
-
 def CheckReflection():
-    print(lightSensor_One.reflection())
-    print(lightSensor_Two.reflection())
-    print(lightSensor_Three.reflection())
-    print(lightSensor_Four.reflection())
+  #  print(lightSensor_One.reflection())
+   # print(lightSensor_Two.reflection())
+   # print(lightSensor_Three.reflection())
+   # print(lightSensor_Four.reflection())
+   print("yes")
 
 # PID shit (there no acctual ID thought )
 
 def PID_regulator():
 
-
-    W1 = lightSensor_One.reflection()
+    # turns out we have only 2 sensors
     W2 = lightSensor_Two.reflection()
     W3 = lightSensor_Three.reflection()
-    W4 = lightSensor_Four.reflection()
     
-    RightSide = W1 + W2
-    LeftSide = W3 + W4
+    RightSide = W2
+    LeftSide  = W3
 
     DeltaError =  RightSide - LeftSide
 
@@ -99,8 +86,11 @@ def PID_regulator():
     SpeedL = BaseSpeed + DeltaError
     SpeedR = BaseSpeed - DeltaError
 
-    LeftMotor.run(SpeedL)
-    RightMotor.run(SpeedR)
+    LeftMotor.run(SpeedL * SpeedMultiplier)
+    RightMotor.run(SpeedR * SpeedMultiplier )
+    ev3.screen.clear
+    ev3.screen.draw_text(0,0, SpeedMultiplier, text_color="Black")
+    
 
 def FollowLineMode():
     while True:

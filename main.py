@@ -8,7 +8,7 @@ from pybricks.tools import wait, StopWatch, DataLog
 from pybricks.robotics import DriveBase
 from pybricks.media.ev3dev import SoundFile, ImageFile
 from time import sleep
-
+import threading
 
 # Create your objects here.
 ev3 = EV3Brick()
@@ -23,17 +23,46 @@ lightSensor_Two = ColorSensor(Port.S2)
 lightSensor_Three = ColorSensor(Port.S3)
 lightSensor_Four = ColorSensor(Port.S4)
 
+RightButton_pressed = False
+LeftButton_pressed = False
+MiddleButton_Pressed = False
 
 
 # placeholders for functions
 def MiddleButton():
-    print("leftButtonPressed")
-    CheckReflection()
-    FollowLineMode()
+    print("MiddleButtonPressed!")
 def LeftButton():
-    print("leftButtonPressed")
+    print("MiddleButtonPressed!")
 def RightButton():
-    print("leftButtonPressed")
+    print("MiddleButtonPressed!")
+
+def CheckButtons():
+    while True:
+        sleep(0.5)
+        if Button.CENTER in ev3.buttons.pressed() and not MiddleButton_Pressed:
+            MiddleButton()
+            MiddleButton_Pressed = True
+        else:
+            MiddleButton_Pressed = False
+        if Button.LEFT in ev3.buttons.pressed() and not LeftButton_pressed:
+            LeftButton()
+            LeftButton_pressed = True
+        else:
+            LeftButton_pressed = False
+        if Button.CENTER in ev3.buttons.pressed() and not RightButton_pressed:
+            RightButton()
+            RightButton_pressed = True
+        else:
+            RightButton_pressed = False
+
+threading.Thread(target=CheckButtons).start
+
+
+
+
+
+
+
 
 # Checking when pressed ( not sure if should be in the loop thought )
 if Button.CENTER in ev3.buttons.pressed():

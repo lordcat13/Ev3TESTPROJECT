@@ -23,16 +23,22 @@ lightSensor_Two = ColorSensor(Port.S2)
 lightSensor_Three = ColorSensor(Port.S3)
 lightSensor_Four = ColorSensor(Port.S4)
 
+
 RightButton_pressed = False
 LeftButton_pressed = False
 MiddleButton_Pressed = False
+
+Calibrated = False
 
 SpeedMultiplier = 1
 
 # placeholders for functions
 def MiddleButton():
     print("MiddleButtonPressed!")
-    FollowLineMode()
+    if not Calibrated:
+        Calibrate
+    else:
+        FollowLineMode
 def LeftButton():
     print("LeftButtonPressed!")
     SpeedMultiplier -= 1
@@ -61,26 +67,22 @@ def CheckButtons():
 
 threading.Thread(target=CheckButtons).start
 
-def CheckReflection():
-  #  print(lightSensor_One.reflection())
-   # print(lightSensor_Two.reflection())
-   # print(lightSensor_Three.reflection())
-   # print(lightSensor_Four.reflection())
-   print("yes")
+Prev_error = 0
+Integral = 0
 
-# PID shit (there no acctual ID thought )
 
 def PID_regulator():
 
     # turns out we have only 2 sensors
-    W2 = lightSensor_Two.reflection()
-    W3 = lightSensor_Three.reflection()
+    W2 = Calibrated(lightSensor_Two.reflection())
+    W3 = Calibrated(lightSensor_Three.reflection())
     
     RightSide = W2
     LeftSide  = W3
 
-    DeltaError =  RightSide - LeftSide
 
+    DeltaError =  RightSide - LeftSide
+  
     BaseSpeed = 75
 
     SpeedL = BaseSpeed + DeltaError
@@ -91,7 +93,43 @@ def PID_regulator():
     ev3.screen.clear
     ev3.screen.draw_text(0,0, SpeedMultiplier, text_color="Black")
     
+Black_min = 0
+White_max = 0
+
+
+def Calibrate():
+    
+    global Black_min, White_max
+
+    ev3.screen.draw_text (100,100,"Put On Black")
+
+    while not MiddleButton_Pressed:
+        sleep(0.5)
+
+    Black_min = lightSensor_Three.reflecion()
+    ev3.screen.clear()
+
+    ev3.screen.draw_text(100,100, "put on white")
+
+    while not MiddleButton_Pressed:
+        sleep(0.5)
+    
+    White_max = lightSensor_Three.reflection()
+    ev3.screen.clear
+
+def GetCalibrated_Values(raw: int):
+    
+    global Black_min, White_max
+
+    calibrated =  (raw - Black_min) / (White_max - Black_min) * 100
+    return max(0, min(100, calibrated))   
+
+
+
+
 
 def FollowLineMode():
     while True:
         PID_regulator
+
+# this code is fucking mess never wish someone to try undestand it :sob:

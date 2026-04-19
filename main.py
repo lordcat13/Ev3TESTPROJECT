@@ -17,12 +17,18 @@ ev3 = EV3Brick()
 LeftMotor = Motor(Port.C)
 RightMotor = Motor(Port.B)
 
+
 # LightSensors :O
 lightSensor_One = ColorSensor(Port.S1)
 lightSensor_Two = ColorSensor(Port.S2)
 lightSensor_Three = ColorSensor(Port.S3)
 lightSensor_Four = ColorSensor(Port.S4)
 
+ColorSensors = {
+    "SecondColorSensor": lightSensor_Two,
+    "ThirdColorSensor": lightSensor_Three
+    
+}
 
 RightButton_pressed = False
 LeftButton_pressed = False
@@ -30,7 +36,18 @@ MiddleButton_Pressed = False
 
 Calibrated = False
 
+ColorSensors_Data = {
+    "FirstColorSensor": { "MaxBlack": 0,  "Maxwhite": 0},
+    "SecondColorSensor":{ "MaxBlack": 0,  "Maxwhite": 0},
+    "ThirdColorSensor": { "MaxBlack": 0,  "Maxwhite": 0},
+    "FourthColorSensor":{ "MaxBlack": 0,  "Maxwhite": 0},
+    "FifthColorSensor": { "MaxBlack": 0,  "Maxwhite": 0},
+}
+
+
 SpeedMultiplier = 1
+
+
 
 # placeholders for functions
 def MiddleButton():
@@ -47,25 +64,43 @@ def RightButton():
     SpeedMultiplier += 1
 
 def CheckButtons():
+    global MiddleButton_Pressed, RightButton_pressed, LeftButton_pressed
+    MiddleButtonS = False, RightButtonS = False, LeftButtonS = False
     while True:
-        sleep(0.2)
-        if Button.CENTER in ev3.buttons.pressed() and not MiddleButton_Pressed:
-            MiddleButton()
+        if Button.CENTER in ev3.buttons.pressed() and not MiddleButtonS:
+            MiddleButtonS = True
             MiddleButton_Pressed = True
-        else:
+            sleep(0.05)
             MiddleButton_Pressed = False
-        if Button.LEFT in ev3.buttons.pressed() and not LeftButton_pressed:
-            LeftButton()
-            LeftButton_pressed = True
-        else:
-            LeftButton_pressed = False
-        if Button.CENTER in ev3.buttons.pressed() and not RightButton_pressed:
-            RightButton()
-            RightButton_pressed = True
-        else:
-            RightButton_pressed = False
+        elif not Button.CENTER in ev3.buttons.pressed():
+            MiddleButtonS = False
 
-threading.Thread(target=CheckButtons).start
+
+        if Button.RIGHT in ev3.buttons.pressed() and not RightButtonS:
+            RightButtonS = True
+            RightButton_pressed = True
+            sleep(0.05)
+            RightButton_pressed = False
+        elif not Button.RIGHT in ev3.buttons.pressed():
+            RightButtonS = False
+
+
+        if Button.LEFT in ev3.buttons.pressed() and not LeftButtonS:
+            LeftButtonS = True
+            LeftButton_pressed = True
+            sleep(0.05)
+            LeftButton_pressed = False
+        elif not Button.LEFT in ev3.buttons.pressed():
+             LeftButtonS = False
+
+
+        sleep(0.05)
+
+
+
+CheckButtonsTheard = threading.Thread(target=CheckButtons)
+CheckButtonsTheard.daemon = True
+CheckButtonsTheard.start
 
 Prev_error = 0
 Integral = 0
@@ -74,8 +109,8 @@ Integral = 0
 def PID_regulator():
 
     # turns out we have only 2 sensors
-    W2 = Calibrated(lightSensor_Two.reflection())
-    W3 = Calibrated(lightSensor_Three.reflection())
+    W2 = GetCalibrated_Values(lightSensor_Two.reflection(), ColorSensors_Data["SecondColorSensor"]["MaxBlack"],ColorSensors_Data["SecondColorSensor"]["MaxWhite"] )
+    W3 = GetCalibrated_Values(lightSensor_Three.reflection(), ColorSensors_Data["ThirdColorSensor"]["MaxBlack"], ColorSensors_Data["ThirdColorSensor"]["MaxWhite"])
     
     RightSide = W2
     LeftSide  = W3
@@ -89,39 +124,54 @@ def PID_regulator():
     SpeedR = BaseSpeed - DeltaError
 
     LeftMotor.run(SpeedL * SpeedMultiplier)
-    RightMotor.run(SpeedR * SpeedMultiplier )
+    RightMotor.run(-SpeedR * SpeedMultiplier )
     ev3.screen.clear
     ev3.screen.draw_text(0,0, SpeedMultiplier, text_color="Black")
     
-Black_min = 0
-White_max = 0
 
 
-def Calibrate():
-    
-    global Black_min, White_max
 
-    ev3.screen.draw_text (100,100,"Put On Black")
+def Calibrate() -> None:
+    global MiddleButton_Pressed
+    offset = 10
+    ev3.screen.draw_text(10, 10, "Put Color Sensors on Black")
 
-    while not MiddleButton_Pressed:
-        sleep(0.5)
-
-    Black_min = lightSensor_Three.reflecion()
+    while not  MiddleButton_Pressed:
+        sleep(0.05)
     ev3.screen.clear()
 
-    ev3.screen.draw_text(100,100, "put on white")
-
-    while not MiddleButton_Pressed:
-        sleep(0.5)
+    for i in ColorSensors:
+        ColorSensors_Data[++i]["MaxBlack"] = ColorSensors[i].reflection
+        ev3.screen.draw_text(10, offset, ColorSensors[i].reflection)
+        offset -= 10
     
-    White_max = lightSensor_Three.reflection()
-    ev3.screen.clear
+    while not  MiddleButton_Pressed:
+        sleep(0.05)
 
-def GetCalibrated_Values(raw: int):
+    ev3.screen.clear()
+    ev3.screen.draw_text(10,10, "Put Color Sensors on White")
+
+    while not  MiddleButton_Pressed:
+        sleep(0.05)
+
+    ev3.screen.clear()
     
-    global Black_min, White_max
+    for i in ColorSensors:
+        ColorSensors_Data[++i]["MaxWhite"] = ColorSensors[i].reflection
+        ev3.screen.draw_text(10, offset, ColorSensors[i].reflection)
+        offset -= 10
+    
 
-    calibrated =  (raw - Black_min) / (White_max - Black_min) * 100
+
+    
+
+
+
+def GetCalibrated_Values(raw: int, MinValue: int, MaxValue: int) -> int: 
+    
+   
+
+    calibrated =  (raw - MinValue) / (MaxValue - MinValue) * 100
     return max(0, min(100, calibrated))   
 
 

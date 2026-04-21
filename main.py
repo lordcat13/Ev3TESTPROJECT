@@ -64,7 +64,7 @@ def RightButton():
     SpeedMultiplier += 1
 
 def CheckButtons():
-    global MiddleButton_Pressed, RightButton_pressed, LeftButton_pressed
+    global MiddleButton_Pressed, RightButton_pressed, LeftButton_pressed, SpeedMultiplier
     MiddleButtonS = False, RightButtonS = False, LeftButtonS = False
     while True:
         if Button.CENTER in ev3.buttons.pressed() and not MiddleButtonS:
@@ -79,6 +79,7 @@ def CheckButtons():
         if Button.RIGHT in ev3.buttons.pressed() and not RightButtonS:
             RightButtonS = True
             RightButton_pressed = True
+            SpeedMultiplier += 1
             sleep(0.05)
             RightButton_pressed = False
         elif not Button.RIGHT in ev3.buttons.pressed():
@@ -88,6 +89,7 @@ def CheckButtons():
         if Button.LEFT in ev3.buttons.pressed() and not LeftButtonS:
             LeftButtonS = True
             LeftButton_pressed = True
+            SpeedMultiplier -= 1
             sleep(0.05)
             LeftButton_pressed = False
         elif not Button.LEFT in ev3.buttons.pressed():
@@ -106,7 +108,7 @@ Prev_error = 0
 Integral = 0
 
 
-def PID_regulator():
+def PID_regulator() -> None:
 
     # turns out we have only 2 sensors
     W2 = GetCalibrated_Values(lightSensor_Two.reflection(), ColorSensors_Data["SecondColorSensor"]["MaxBlack"],ColorSensors_Data["SecondColorSensor"]["MaxWhite"] )
@@ -125,8 +127,8 @@ def PID_regulator():
 
     LeftMotor.run(SpeedL * SpeedMultiplier)
     RightMotor.run(-SpeedR * SpeedMultiplier )
-    ev3.screen.clear
-    ev3.screen.draw_text(0,0, SpeedMultiplier, text_color="Black")
+    ev3.screen.clear()
+    ev3.screen.draw_text(0,0, SpeedMultiplier)
     
 
 
@@ -161,7 +163,11 @@ def Calibrate() -> None:
         ev3.screen.draw_text(10, offset, ColorSensors[i].reflection)
         offset -= 10
     
+    ev3.screen.draw_text(10,10, "All done!")
+    sleep(0.5)
+    ev3.screen.clear()
 
+    PID_regulator()
 
     
 
@@ -181,5 +187,10 @@ def GetCalibrated_Values(raw: int, MinValue: int, MaxValue: int) -> int:
 def FollowLineMode():
     while True:
         PID_regulator
+
+while not MiddleButton_Pressed:
+    sleep(0.01)
+
+Calibrate()
 
 # this code is fucking mess never wish someone to try undestand it :sob:

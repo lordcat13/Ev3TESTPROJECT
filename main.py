@@ -167,7 +167,7 @@ def Calibrate() -> None:
     sleep(0.5)
     ev3.screen.clear()
 
-    PID_regulator()
+    FollowLineMode()
 
     
 
